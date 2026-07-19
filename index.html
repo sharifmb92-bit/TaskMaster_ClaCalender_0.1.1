@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>TaskMaster Calendar Pro 1.5.0</title>
+    <title>TaskMaster Calendar Pro 1.6.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2b1810">
 
-    <!-- Soporte específico para iOS: sin esto la app se abre como pestaña de Safari,
-         no a pantalla completa, y las notificaciones no funcionan en absoluto -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TaskMaster">
@@ -16,7 +14,6 @@
     <link rel="icon" href="icon-192.png">
 
     <style>
-        /* Paletas de color elegibles por el usuario */
         .theme-cafe {
             --bg-main: #2b1810; --bg-card: #3d251c; --bg-input: #1f100a;
             --text-main: #f5ebe6; --text-muted: #b59e93; --accent: #df9a57;
@@ -45,32 +42,43 @@
         body {
             background-color: var(--bg-main); color: var(--text-main);
             padding: 16px; display: flex; justify-content: center; min-height: 100vh;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .app-container {
             width: 100%; max-width: 480px; background: var(--bg-card);
-            border-radius: 24px; padding: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            border-radius: 24px; padding: 22px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.05); position: relative; overflow-y: auto; max-height: 95vh;
         }
 
-        .screen { display: none; animation: slideIn 0.25s ease forwards; }
+        .screen { display: none; animation: slideIn 0.22s ease forwards; }
         .screen.active { display: block; }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(15px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .theme-selector {
-            display: flex; gap: 8px; margin-bottom: 20px; justify-content: space-between;
-            align-items: center; background: var(--bg-input); padding: 10px; border-radius: 12px;
+        /* --- Cabecera principal --- */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
         }
-        .theme-dot {
-            width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+        .top-bar h1 { font-size: 1.15rem; letter-spacing: 0.02em; }
+        .icon-btn {
+            background: var(--bg-input); border: 1px solid rgba(255,255,255,0.06);
+            color: var(--text-main); width: 38px; height: 38px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            font-size: 1.05rem; transition: transform 0.1s;
         }
-        .theme-dot.active { border-color: var(--text-main); }
+        .icon-btn:active { transform: scale(0.9); }
 
+        .status-banner {
+            font-size: 0.75rem; padding: 10px 12px; border-radius: 12px; margin-bottom: 14px;
+            background: var(--bg-input); color: var(--color-medium); text-align: center; cursor: pointer;
+            border: 1px dashed var(--color-medium);
+        }
+
+        /* --- Calendario --- */
         .calendar-header {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
         }
@@ -78,14 +86,13 @@
             background: var(--bg-input); border: 1px solid rgba(255,255,255,0.05);
             color: var(--text-main); font-size: 1.1rem; width: 36px; height: 36px;
             border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
         }
         .nav-btn:active { transform: scale(0.9); }
 
         .calendar-grid {
             display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center;
         }
-        .calendar-day-name { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; padding-bottom: 6px; }
+        .calendar-day-name { font-size: 0.72rem; color: var(--text-muted); font-weight: bold; padding-bottom: 6px; }
 
         .calendar-cell {
             background: var(--bg-input); aspect-ratio: 1; border-radius: 12px;
@@ -102,41 +109,109 @@
         }
         .ind-bar { flex: 1; height: 100%; }
 
-        .form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 0.8rem; font-weight: bold; color: var(--text-muted); }
-        input, select {
-            background: var(--bg-input); border: 1px solid rgba(255,255,255,0.05);
-            color: var(--text-main); padding: 12px; border-radius: 12px; outline: none; font-size: 1rem;
+        /* --- Pantalla de día: cabecera con fecha legible --- */
+        .day-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
         }
+        .day-header .day-title { flex: 1; }
+        .day-title .weekday { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .day-title .datestr { font-size: 1.25rem; font-weight: 700; }
+
+        /* --- Tarjeta de formulario --- */
+        .card {
+            background: var(--bg-input); border-radius: 16px; padding: 16px; margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .card-title {
+            font-size: 0.78rem; font-weight: 700; color: var(--accent); text-transform: uppercase;
+            letter-spacing: 0.04em; margin-bottom: 12px;
+        }
+
+        .form-group { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+        .form-group:last-child { margin-bottom: 0; }
+        label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+        input, select {
+            background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
+            color: var(--text-main); padding: 11px 12px; border-radius: 10px; outline: none; font-size: 0.95rem;
+        }
+
+        /* Selector de prioridad como chips */
+        .priority-chips { display: flex; gap: 8px; }
+        .priority-chip {
+            flex: 1; padding: 10px 6px; border-radius: 10px; text-align: center; font-size: 0.78rem;
+            font-weight: 700; cursor: pointer; border: 2px solid transparent; color: #1a1008;
+            opacity: 0.55; transition: opacity 0.15s, transform 0.1s;
+        }
+        .priority-chip.selected { opacity: 1; border-color: rgba(255,255,255,0.5); }
+        .priority-chip:active { transform: scale(0.95); }
+        .chip-low { background: var(--color-low); }
+        .chip-medium { background: var(--color-medium); }
+        .chip-high { background: var(--color-high); }
 
         .btn {
-            padding: 14px; border-radius: 12px; border: none; font-weight: bold;
-            font-size: 1rem; cursor: pointer; text-align: center; width: 100%; transition: transform 0.1s;
+            padding: 13px; border-radius: 12px; border: none; font-weight: 700;
+            font-size: 0.95rem; cursor: pointer; text-align: center; width: 100%; transition: transform 0.1s;
         }
         .btn:active { transform: scale(0.97); }
-        .btn-primary { background: var(--accent); color: var(--bg-input); font-weight: 800; margin-top: 10px; }
-        .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--text-muted); margin-top: 8px; }
-        .btn-small { padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; width: auto; margin-top: 4px; }
+        .btn-primary { background: var(--accent); color: var(--bg-input); font-weight: 800; }
+        .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+        .btn-small { padding: 8px 12px; font-size: 0.82rem; border-radius: 8px; width: auto; }
 
-        .event-item {
-            background: var(--bg-input); padding: 12px; border-radius: 12px; margin-top: 10px;
-            border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center;
+        .event-list-title {
+            font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.04em; margin: 20px 0 10px 2px;
         }
-        .btn-mini-del { background: var(--color-high); border: none; color: white; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+        .empty-hint {
+            font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 18px 8px;
+            background: var(--bg-input); border-radius: 14px; border: 1px dashed rgba(255,255,255,0.08);
+        }
 
-        .config-box {
-            background: var(--bg-input); padding: 16px; border-radius: 16px; margin-top: 24px;
-            border: 1px dashed rgba(255,255,255,0.1);
+        .event-card {
+            background: var(--bg-input); padding: 13px 14px; border-radius: 14px; margin-bottom: 10px;
+            display: flex; align-items: flex-start; gap: 12px; border: 1px solid rgba(255,255,255,0.04);
         }
-        .config-title { font-size: 0.9rem; font-weight: bold; color: var(--accent); margin-bottom: 12px; }
+        .event-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+        .event-info { flex: 1; min-width: 0; }
+        .event-time { font-size: 0.72rem; color: var(--accent); font-weight: 700; }
+        .event-title-txt { font-size: 0.92rem; font-weight: 600; margin-top: 1px; }
+        .event-geo { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+        .event-del {
+            background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;
+            padding: 2px 4px; flex-shrink: 0;
+        }
+
+        /* --- Pantalla de ajustes --- */
+        .settings-section { margin-bottom: 22px; }
+        .settings-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 12px;
+            padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-label { font-size: 0.9rem; font-weight: 600; }
+        .settings-row-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+        .theme-dots { display: flex; gap: 10px; }
+        .theme-dot {
+            width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+        }
+        .theme-dot.active { border-color: var(--text-main); }
+
+        /* Toggle switch */
+        .switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0; background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; transition: 0.2s;
+        }
+        .slider::before {
+            content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background: var(--text-muted); border-radius: 50%; transition: 0.2s;
+        }
+        .switch input:checked + .slider { background: var(--accent); }
+        .switch input:checked + .slider::before { transform: translateX(18px); background: var(--bg-input); }
+
         .loc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.85rem; }
-
-        .status-banner {
-            font-size: 0.75rem; padding: 8px 12px; border-radius: 10px; margin-bottom: 14px;
-            background: var(--bg-input); color: var(--text-muted); text-align: center;
-        }
-        .status-banner.ok { color: var(--color-low); }
-        .status-banner.warn { color: var(--color-medium); }
+        .version-tag { text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
     </style>
 </head>
 <body class="theme-cafe">
@@ -145,72 +220,131 @@
 
         <!-- PANTALLA 1: CALENDARIO PRINCIPAL -->
         <div id="screen-calendar" class="screen active">
-            <div id="permission-banner" class="status-banner warn" style="display:none;" onclick="requestPermissions()">
-                Toca aquí para activar notificaciones y alarmas
+            <div class="top-bar">
+                <h1>TaskMaster</h1>
+                <button class="icon-btn" onclick="changeScreen('settings')" aria-label="Ajustes">⚙️</button>
             </div>
 
-            <div class="theme-selector">
-                <span style="font-size: 0.85rem; font-weight: bold;">COLOR CALENDARIO:</span>
-                <div style="display: flex; gap: 8px;">
-                    <div class="theme-dot active" style="background:#df9a57;" onclick="setTheme('cafe', this)"></div>
-                    <div class="theme-dot" style="background:#707070;" onclick="setTheme('gris', this)"></div>
-                    <div class="theme-dot" style="background:#38bdf8;" onclick="setTheme('marino', this)"></div>
-                </div>
+            <div id="permission-banner" class="status-banner" style="display:none;" onclick="requestPermissions()">
+                Toca aquí para activar notificaciones y alarmas
             </div>
 
             <div class="calendar-header">
                 <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
-                <h2 id="calendar-month-year" style="margin:0; color: var(--text-main); font-size: 1.25rem; text-align: center; min-width: 150px;">Julio 2026</h2>
+                <h2 id="calendar-month-year" style="margin:0; color: var(--text-main); font-size: 1.2rem; text-align: center; min-width: 150px;">Julio 2026</h2>
                 <button class="nav-btn" onclick="changeMonth(1)">▶</button>
             </div>
 
-            <div class="calendar-grid" id="calendar-grid">
-                <!-- Generado dinámicamente -->
-            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
         </div>
 
-        <!-- PANTALLA 2: PROGRAMACIÓN DE EVENTOS Y AJUSTES -->
+        <!-- PANTALLA 2: DETALLE DE DÍA -->
         <div id="screen-events" class="screen">
-            <h2 id="selected-date-title" style="margin: 0 0 16px 0; color: var(--text-main);">Eventos</h2>
-
-            <div class="form-group">
-                <label>Título del Evento</label>
-                <input type="text" id="eventTitle" placeholder="Ej. Dejar llaves / Comprar pan">
+            <div class="day-header">
+                <button class="icon-btn" onclick="changeScreen('calendar')" aria-label="Volver">←</button>
+                <div class="day-title">
+                    <div class="weekday" id="selected-weekday">Día</div>
+                    <div class="datestr" id="selected-date-title">--</div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Hora exacta de alerta</label>
-                <input type="time" id="eventTime">
+            <div class="card">
+                <div class="card-title">Nuevo evento</div>
+
+                <div class="form-group">
+                    <label>Título</label>
+                    <input type="text" id="eventTitle" placeholder="Ej. Dejar llaves / Comprar pan">
+                </div>
+
+                <div class="form-group">
+                    <label>Hora exacta de alerta</label>
+                    <input type="time" id="eventTime">
+                </div>
+
+                <div class="form-group">
+                    <label>Prioridad</label>
+                    <div class="priority-chips" id="priority-chips">
+                        <div class="priority-chip chip-low selected" data-value="low" onclick="selectPriority(this)">Baja</div>
+                        <div class="priority-chip chip-medium" data-value="medium" onclick="selectPriority(this)">Media</div>
+                        <div class="priority-chip chip-high" data-value="high" onclick="selectPriority(this)">Alta</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Alerta de ubicación (geofencing)</label>
+                    <select id="eventLoc">
+                        <option value="none">Ninguna</option>
+                        <option value="central">Mi Cochera</option>
+                        <option value="casa">Mi Casa</option>
+                        <option value="mercadona">Cualquier Mercadona</option>
+                        <option value="super">Cualquier Supermercado</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" style="margin-top: 14px;" onclick="saveEvent()">Guardar evento</button>
             </div>
 
-            <div class="form-group">
-                <label>Prioridad (Color de Barra)</label>
-                <select id="eventPriority">
-                    <option value="low">Baja (Menta)</option>
-                    <option value="medium">Media (Canela)</option>
-                    <option value="high">Alta (Terracota)</option>
-                </select>
+            <div class="event-list-title">Eventos de este día</div>
+            <div id="current-day-events"></div>
+        </div>
+
+        <!-- PANTALLA 3: AJUSTES -->
+        <div id="screen-settings" class="screen">
+            <div class="day-header">
+                <button class="icon-btn" onclick="changeScreen('calendar')" aria-label="Volver">←</button>
+                <div class="day-title"><div class="datestr">Ajustes</div></div>
             </div>
 
-            <div class="form-group">
-                <label>Alerta Inteligente de Ubicación (Geofencing)</label>
-                <select id="eventLoc">
-                    <option value="none">Ninguna</option>
-                    <option value="central">Mi Cochera (Configurada)</option>
-                    <option value="casa">Mi Casa (Configurada)</option>
-                    <option value="mercadona">Cualquier Mercadona</option>
-                    <option value="super">Cualquier Supermercado</option>
-                </select>
+            <div class="settings-section">
+                <div class="card-title" style="margin-left:2px;">Apariencia</div>
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Color del calendario</div>
+                    </div>
+                    <div class="theme-dots">
+                        <div class="theme-dot active" style="background:#df9a57;" onclick="setTheme('cafe', this)"></div>
+                        <div class="theme-dot" style="background:#707070;" onclick="setTheme('gris', this)"></div>
+                        <div class="theme-dot" style="background:#38bdf8;" onclick="setTheme('marino', this)"></div>
+                    </div>
+                </div>
             </div>
 
-            <button class="btn btn-primary" onclick="saveEvent()">Guardar Evento en esta Fecha</button>
-            <button class="btn btn-secondary" onclick="changeScreen('calendar')">Volver al Calendario</button>
+            <div class="settings-section">
+                <div class="card-title" style="margin-left:2px;">Alarmas y avisos</div>
 
-            <h3 style="margin-top: 24px; font-size: 1rem; color: var(--text-muted);">Eventos en este día:</h3>
-            <div id="current-day-events" style="margin-bottom: 20px;"></div>
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Sonido</div>
+                        <div class="settings-row-sub">Pitido al dispararse una alarma</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-sound" checked onchange="updateSetting('sound', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
 
-            <div class="config-box">
-                <div class="config-title">📍 Configurar mis lugares de confianza</div>
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Vibración</div>
+                        <div class="settings-row-sub">Solo disponible en Android</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-vibration" checked onchange="updateSetting('vibration', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Notificaciones del sistema</div>
+                        <div id="notif-status" class="settings-row-sub">Comprobando…</div>
+                    </div>
+                    <button class="btn btn-primary btn-small" onclick="requestPermissions()">Activar</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="card-title" style="margin-left:2px;">📍 Mis lugares de confianza</div>
 
                 <div class="loc-row">
                     <div>
@@ -225,29 +359,26 @@
                     </div>
                     <button class="btn btn-primary btn-small" onclick="saveCurrentLocation('casa')">Guardar aquí</button>
                 </div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; line-height: 1.25;">* Ve físicamente al lugar y pulsa "Guardar aquí". La app memorizará las coordenadas exactas de tu GPS.</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; line-height: 1.3;">Ve físicamente al lugar y pulsa "Guardar aquí". La app memorizará las coordenadas exactas de tu GPS.</p>
             </div>
+
+            <div class="version-tag" id="version-tag"></div>
         </div>
 
     </div>
 
     <script>
-        const config = {
-            version: '1.5.1',
-            sysSignature: 'medbasha'
-        };
+        const config = { version: '1.6.0', sysSignature: 'medbasha' };
 
         let events = JSON.parse(localStorage.getItem('cal_events')) || [];
-
-        let customLocations = JSON.parse(localStorage.getItem('custom_locations')) || {
-            central: null,
-            casa: null
-        };
+        let customLocations = JSON.parse(localStorage.getItem('custom_locations')) || { central: null, casa: null };
+        let appSettings = JSON.parse(localStorage.getItem('app_settings')) || { sound: true, vibration: true };
 
         const todayDate = new Date();
         let currentYear = todayDate.getFullYear();
         let currentMonth = todayDate.getMonth();
         let selectedDateStr = '';
+        let selectedPriority = 'low';
 
         const geofenceZones = {
             mercadona: [
@@ -270,9 +401,26 @@
             initTimeAlarms();
             updateLocationUI();
             updatePermissionBanner();
+            initSettingsUI();
+            document.getElementById('version-tag').innerText = 'TaskMaster v' + config.version;
         });
 
-        // --- PWA / Service Worker ---
+        function initSettingsUI() {
+            document.getElementById('toggle-sound').checked = !!appSettings.sound;
+            document.getElementById('toggle-vibration').checked = !!appSettings.vibration;
+        }
+
+        function updateSetting(key, value) {
+            appSettings[key] = value;
+            localStorage.setItem('app_settings', JSON.stringify(appSettings));
+        }
+
+        function selectPriority(el) {
+            document.querySelectorAll('.priority-chip').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedPriority = el.dataset.value;
+        }
+
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js')
@@ -283,36 +431,38 @@
 
         function updatePermissionBanner() {
             const banner = document.getElementById('permission-banner');
+            const notifStatus = document.getElementById('notif-status');
             if (!('Notification' in window)) {
                 banner.style.display = 'block';
                 banner.innerText = 'Este navegador no soporta notificaciones.';
+                if (notifStatus) notifStatus.innerText = 'No soportado en este navegador';
                 return;
             }
             if (Notification.permission !== 'granted') {
                 banner.style.display = 'block';
+                if (notifStatus) notifStatus.innerText = Notification.permission === 'denied'
+                    ? 'Bloqueadas — actívalas desde los ajustes del navegador'
+                    : 'Pendiente de activar';
             } else {
                 banner.style.display = 'none';
+                if (notifStatus) notifStatus.innerText = 'Activadas';
             }
         }
 
-        // Debe llamarse desde un toque del usuario (requisito de iOS Safari)
         function requestPermissions() {
             if ('Notification' in window) {
                 Notification.requestPermission().then(() => updatePermissionBanner());
             }
-            // "Desbloquea" el audio en iOS, que exige interacción previa
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const ctx = new AudioContext();
                 ctx.resume();
             } catch (e) {}
-            // Vibración de confirmación
             if (navigator.vibrate) navigator.vibrate(100);
         }
 
         function saveCurrentLocation(type) {
             if (!navigator.geolocation) return alert("Tu navegador no soporta geolocalización.");
-
             navigator.geolocation.getCurrentPosition(pos => {
                 const { latitude, longitude } = pos.coords;
                 customLocations[type] = { lat: latitude, lon: longitude };
@@ -327,7 +477,6 @@
         function updateLocationUI() {
             const cocheraStatus = document.getElementById('cochera-status');
             const casaStatus = document.getElementById('casa-status');
-
             if (customLocations.central) {
                 cocheraStatus.innerText = `Guardada (${customLocations.central.lat.toFixed(4)}, ${customLocations.central.lon.toFixed(4)})`;
                 cocheraStatus.style.color = 'var(--color-low)';
@@ -342,6 +491,7 @@
             document.body.className = 'theme-' + themeName;
             document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
             element.classList.add('active');
+            localStorage.setItem('app_theme', themeName);
         }
 
         function changeScreen(screen) {
@@ -351,13 +501,8 @@
 
         function changeMonth(direction) {
             currentMonth += direction;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            } else if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
             initCalendar();
         }
 
@@ -365,10 +510,10 @@
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
 
-            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
             document.getElementById('calendar-month-year').innerText = `${months[currentMonth]} ${currentYear}`;
 
-            const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+            const dayNames = ['D','L','M','X','J','V','S'];
             dayNames.forEach(name => {
                 const el = document.createElement('div');
                 el.className = 'calendar-day-name';
@@ -400,7 +545,6 @@
                 if (dayEvents.length > 0) {
                     const barContainer = document.createElement('div');
                     barContainer.className = 'indicator-bar-container';
-
                     dayEvents.slice(0, 3).forEach(ev => {
                         const bar = document.createElement('div');
                         bar.className = 'ind-bar';
@@ -415,9 +559,25 @@
             }
         }
 
+        function formatDateHuman(dateKey) {
+            const [y, m, d] = dateKey.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            const weekdays = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+            const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            return {
+                weekday: weekdays[dateObj.getDay()],
+                readable: `${d} de ${months[m - 1]}`
+            };
+        }
+
         function openDate(dateKey) {
             selectedDateStr = dateKey;
-            document.getElementById('selected-date-title').innerText = `Gestión: ${dateKey}`;
+            const { weekday, readable } = formatDateHuman(dateKey);
+            document.getElementById('selected-weekday').innerText = weekday;
+            document.getElementById('selected-date-title').innerText = readable;
+            selectedPriority = 'low';
+            document.querySelectorAll('.priority-chip').forEach(c => c.classList.remove('selected'));
+            document.querySelector('.priority-chip[data-value="low"]').classList.add('selected');
             renderDayEvents();
             changeScreen('events');
         }
@@ -425,15 +585,14 @@
         function saveEvent() {
             const title = document.getElementById('eventTitle').value;
             const time = document.getElementById('eventTime').value;
-            const priority = document.getElementById('eventPriority').value;
             const loc = document.getElementById('eventLoc').value;
 
-            if (!title || !time) return alert("Rellena los datos básicos.");
+            if (!title || !time) return alert("Rellena el título y la hora.");
 
             events.push({
                 id: 'ev_' + Date.now(),
                 date: selectedDateStr,
-                title, time, priority, loc,
+                title, time, priority: selectedPriority, loc,
                 notified: false,
                 alarmFired: false
             });
@@ -449,25 +608,32 @@
         function renderDayEvents() {
             const container = document.getElementById('current-day-events');
             container.innerHTML = '';
-            const dayEvents = events.filter(e => e.date === selectedDateStr);
+            const dayEvents = events.filter(e => e.date === selectedDateStr).sort((a,b) => a.time.localeCompare(b.time));
+
+            if (dayEvents.length === 0) {
+                container.innerHTML = '<div class="empty-hint">Sin eventos todavía. Añade el primero arriba.</div>';
+                return;
+            }
+
+            const labelMap = { central: 'Mi Cochera', casa: 'Mi Casa', mercadona: 'Mercadona', super: 'Supermercado' };
 
             dayEvents.forEach(ev => {
                 const div = document.createElement('div');
-                div.className = 'event-item';
-                div.style.borderLeftColor = `var(--color-${ev.priority})`;
+                div.className = 'event-card';
 
-                let labelGeo = '';
+                let geoLine = '';
                 if (ev.loc !== 'none') {
-                    const labelMap = { central: 'Mi Cochera', casa: 'Mi Casa', mercadona: 'Mercadona', super: 'Supermercado' };
-                    labelGeo = `<br><small>📍 Alerta de proximidad: ${labelMap[ev.loc] || ev.loc}</small>`;
+                    geoLine = `<div class="event-geo">📍 ${labelMap[ev.loc] || ev.loc}</div>`;
                 }
 
                 div.innerHTML = `
-                    <div>
-                        <strong>[${ev.time}] ${ev.title}</strong>
-                        ${labelGeo}
+                    <div class="event-dot" style="background:var(--color-${ev.priority});"></div>
+                    <div class="event-info">
+                        <div class="event-time">${ev.time}</div>
+                        <div class="event-title-txt">${ev.title}</div>
+                        ${geoLine}
                     </div>
-                    <button class="btn-mini-del" onclick="deleteEvent('${ev.id}')">X</button>
+                    <button class="event-del" onclick="deleteEvent('${ev.id}')" aria-label="Eliminar">✕</button>
                 `;
                 container.appendChild(div);
             });
@@ -481,11 +647,11 @@
         }
 
         function playAlertSound() {
+            if (!appSettings.sound) return;
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContext) return;
                 const ctx = new AudioContext();
-
                 const playBeep = (delay, frequency, duration) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
@@ -498,7 +664,6 @@
                     osc.start(ctx.currentTime + delay);
                     osc.stop(ctx.currentTime + delay + duration);
                 };
-
                 playBeep(0, 880, 0.15);
                 playBeep(0.2, 880, 0.25);
             } catch (e) {
@@ -506,22 +671,19 @@
             }
         }
 
-        // Punto único de disparo: sonido + vibración + notificación
         function triggerAlarm(title, body, tag) {
             playAlertSound();
 
-            // Vibración: solo funciona en Android/Chrome, iOS Safari no expone esta API
-            if (navigator.vibrate) {
+            if (appSettings.vibration && navigator.vibrate) {
                 navigator.vibrate([200, 100, 200, 100, 400]);
             }
 
             if (swRegistration && swRegistration.showNotification) {
-                // Vía Service Worker: más fiable en Android, incluye patrón de vibración propio
                 swRegistration.showNotification(title, {
                     body,
                     icon: 'icon-192.png',
                     badge: 'icon-192.png',
-                    vibrate: [200, 100, 200, 100, 400],
+                    vibrate: appSettings.vibration ? [200, 100, 200, 100, 400] : [],
                     tag,
                     requireInteraction: true
                 });
@@ -532,7 +694,6 @@
 
         function initSmartTracking() {
             if (!navigator.geolocation) return;
-
             setInterval(() => {
                 navigator.geolocation.getCurrentPosition(pos => {
                     const { latitude, longitude, speed } = pos.coords;
@@ -542,7 +703,6 @@
                         if (ev.loc === 'none' || ev.notified) return;
 
                         let locationsToCheck = [];
-
                         if (ev.loc === 'central' && customLocations.central) {
                             locationsToCheck = [{ name: 'Tu Cochera', lat: customLocations.central.lat, lon: customLocations.central.lon }];
                         } else if (ev.loc === 'casa' && customLocations.casa) {
@@ -553,7 +713,6 @@
 
                         locationsToCheck.forEach(place => {
                             if (ev.notified) return;
-
                             const distanceKm = calculateDistance(latitude, longitude, place.lat, place.lon);
                             const timeToArrivalMinutes = (distanceKm / currentSpeedKmh) * 60;
 
@@ -568,7 +727,6 @@
             }, 25000);
         }
 
-        // Alarmas por hora exacta: compara la hora actual con la hora guardada de cada evento
         function initTimeAlarms() {
             checkTimeAlarms();
             setInterval(checkTimeAlarms, 20000);
