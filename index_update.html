@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TaskMaster Calendar Pro 1.5.0</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2b1810">
+
+    <!-- Soporte específico para iOS: sin esto la app se abre como pestaña de Safari,
+         no a pantalla completa, y las notificaciones no funcionan en absoluto -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TaskMaster">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" href="icon-192.png">
+
+    <style>
+        /* Paletas de color elegibles por el usuario */
+        .theme-cafe {
+            --bg-main: #2b1810; --bg-card: #3d251c; --bg-input: #1f100a;
+            --text-main: #f5ebe6; --text-muted: #b59e93; --accent: #df9a57;
+        }
+        .theme-gris {
+            --bg-main: #1a1a1a; --bg-card: #2a2a2a; --bg-input: #111111;
+            --text-main: #ffffff; --text-muted: #888888; --accent: #707070;
+        }
+        .theme-marino {
+            --bg-main: #0f172a; --bg-card: #1e293b; --bg-input: #020617;
+            --text-main: #f8fafc; --text-muted: #94a3b8; --accent: #38bdf8;
+        }
+
+        :root {
+            --color-high: #cd4439;
+            --color-medium: #d48c3f;
+            --color-low: #7fa96e;
+        }
+
+        * {
+            box-sizing: border-box; margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main); color: var(--text-main);
+            padding: 16px; display: flex; justify-content: center; min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        .app-container {
+            width: 100%; max-width: 480px; background: var(--bg-card);
+            border-radius: 24px; padding: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.05); position: relative; overflow-y: auto; max-height: 95vh;
+        }
+
+        .screen { display: none; animation: slideIn 0.25s ease forwards; }
+        .screen.active { display: block; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .theme-selector {
+            display: flex; gap: 8px; margin-bottom: 20px; justify-content: space-between;
+            align-items: center; background: var(--bg-input); padding: 10px; border-radius: 12px;
+        }
+        .theme-dot {
+            width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+        }
+        .theme-dot.active { border-color: var(--text-main); }
+
+        .calendar-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+        }
+        .nav-btn {
+            background: var(--bg-input); border: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-main); font-size: 1.1rem; width: 36px; height: 36px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .nav-btn:active { transform: scale(0.9); }
+
+        .calendar-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center;
+        }
+        .calendar-day-name { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; padding-bottom: 6px; }
+
+        .calendar-cell {
+            background: var(--bg-input); aspect-ratio: 1; border-radius: 12px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; position: relative; transition: transform 0.1s; font-weight: 600;
+        }
+        .calendar-cell.empty { background: transparent; cursor: default; }
+        .calendar-cell:not(.empty):active { transform: scale(0.92); }
+        .calendar-cell.today { border: 2px solid var(--accent); }
+
+        .indicator-bar-container {
+            position: absolute; bottom: 6px; left: 6px; right: 6px;
+            display: flex; gap: 2px; height: 3px; border-radius: 2px; overflow: hidden;
+        }
+        .ind-bar { flex: 1; height: 100%; }
+
+        .form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 0.8rem; font-weight: bold; color: var(--text-muted); }
+        input, select {
+            background: var(--bg-input); border: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-main); padding: 12px; border-radius: 12px; outline: none; font-size: 1rem;
+        }
+
+        .btn {
+            padding: 14px; border-radius: 12px; border: none; font-weight: bold;
+            font-size: 1rem; cursor: pointer; text-align: center; width: 100%; transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--accent); color: var(--bg-input); font-weight: 800; margin-top: 10px; }
+        .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--text-muted); margin-top: 8px; }
+        .btn-small { padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; width: auto; margin-top: 4px; }
+
+        .event-item {
+            background: var(--bg-input); padding: 12px; border-radius: 12px; margin-top: 10px;
+            border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center;
+        }
+        .btn-mini-del { background: var(--color-high); border: none; color: white; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+
+        .config-box {
+            background: var(--bg-input); padding: 16px; border-radius: 16px; margin-top: 24px;
+            border: 1px dashed rgba(255,255,255,0.1);
+        }
+        .config-title { font-size: 0.9rem; font-weight: bold; color: var(--accent); margin-bottom: 12px; }
+        .loc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.85rem; }
+
+        .status-banner {
+            font-size: 0.75rem; padding: 8px 12px; border-radius: 10px; margin-bottom: 14px;
+            background: var(--bg-input); color: var(--text-muted); text-align: center;
+        }
+        .status-banner.ok { color: var(--color-low); }
+        .status-banner.warn { color: var(--color-medium); }
+    </style>
+</head>
+<body class="theme-cafe">
+
+    <div class="app-container">
+
+        <!-- PANTALLA 1: CALENDARIO PRINCIPAL -->
+        <div id="screen-calendar" class="screen active">
+            <div id="permission-banner" class="status-banner warn" style="display:none;" onclick="requestPermissions()">
+                Toca aquí para activar notificaciones y alarmas
+            </div>
+
+            <div class="theme-selector">
+                <span style="font-size: 0.85rem; font-weight: bold;">COLOR CALENDARIO:</span>
+                <div style="display: flex; gap: 8px;">
+                    <div class="theme-dot active" style="background:#df9a57;" onclick="setTheme('cafe', this)"></div>
+                    <div class="theme-dot" style="background:#707070;" onclick="setTheme('gris', this)"></div>
+                    <div class="theme-dot" style="background:#38bdf8;" onclick="setTheme('marino', this)"></div>
+                </div>
+            </div>
+
+            <div class="calendar-header">
+                <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
+                <h2 id="calendar-month-year" style="margin:0; color: var(--text-main); font-size: 1.25rem; text-align: center; min-width: 150px;">Julio 2026</h2>
+                <button class="nav-btn" onclick="changeMonth(1)">▶</button>
+            </div>
+
+            <div class="calendar-grid" id="calendar-grid">
+                <!-- Generado dinámicamente -->
+            </div>
+        </div>
+
+        <!-- PANTALLA 2: PROGRAMACIÓN DE EVENTOS Y AJUSTES -->
+        <div id="screen-events" class="screen">
+            <h2 id="selected-date-title" style="margin: 0 0 16px 0; color: var(--text-main);">Eventos</h2>
+
+            <div class="form-group">
+                <label>Título del Evento</label>
+                <input type="text" id="eventTitle" placeholder="Ej. Dejar llaves / Comprar pan">
+            </div>
+
+            <div class="form-group">
+                <label>Hora exacta de alerta</label>
+                <input type="time" id="eventTime">
+            </div>
+
+            <div class="form-group">
+                <label>Prioridad (Color de Barra)</label>
+                <select id="eventPriority">
+                    <option value="low">Baja (Menta)</option>
+                    <option value="medium">Media (Canela)</option>
+                    <option value="high">Alta (Terracota)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Alerta Inteligente de Ubicación (Geofencing)</label>
+                <select id="eventLoc">
+                    <option value="none">Ninguna</option>
+                    <option value="central">Mi Cochera (Configurada)</option>
+                    <option value="casa">Mi Casa (Configurada)</option>
+                    <option value="mercadona">Cualquier Mercadona</option>
+                    <option value="super">Cualquier Supermercado</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveEvent()">Guardar Evento en esta Fecha</button>
+            <button class="btn btn-secondary" onclick="changeScreen('calendar')">Volver al Calendario</button>
+
+            <h3 style="margin-top: 24px; font-size: 1rem; color: var(--text-muted);">Eventos en este día:</h3>
+            <div id="current-day-events" style="margin-bottom: 20px;"></div>
+
+            <div class="config-box">
+                <div class="config-title">📍 Configurar mis lugares de confianza</div>
+
+                <div class="loc-row">
+                    <div>
+                        <strong>Mi Cochera:</strong> <span id="cochera-status" style="color: var(--text-muted);">Sin guardar</span>
+                    </div>
+                    <button class="btn btn-primary btn-small" onclick="saveCurrentLocation('central')">Guardar aquí</button>
+                </div>
+
+                <div class="loc-row">
+                    <div>
+                        <strong>Mi Casa:</strong> <span id="casa-status" style="color: var(--text-muted);">Sin guardar</span>
+                    </div>
+                    <button class="btn btn-primary btn-small" onclick="saveCurrentLocation('casa')">Guardar aquí</button>
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; line-height: 1.25;">* Ve físicamente al lugar y pulsa "Guardar aquí". La app memorizará las coordenadas exactas de tu GPS.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const config = {
+            version: '1.5.1',
+            sysSignature: 'medbasha'
+        };
+
+        let events = JSON.parse(localStorage.getItem('cal_events')) || [];
+
+        let customLocations = JSON.parse(localStorage.getItem('custom_locations')) || {
+            central: null,
+            casa: null
+        };
+
+        const todayDate = new Date();
+        let currentYear = todayDate.getFullYear();
+        let currentMonth = todayDate.getMonth();
+        let selectedDateStr = '';
+
+        const geofenceZones = {
+            mercadona: [
+                { name: 'Mercadona Ciutadella', lat: 40.0057, lon: 3.8546 },
+                { name: 'Mercadona Centro', lat: 39.9022, lon: 4.2498 }
+            ],
+            super: [
+                { name: 'Mercadona Ciutadella', lat: 40.0057, lon: 3.8546 },
+                { name: 'Eroski', lat: 40.0021, lon: 3.8423 },
+                { name: 'Lidl', lat: 39.9985, lon: 3.8499 }
+            ]
+        };
+
+        let swRegistration = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            registerServiceWorker();
+            initCalendar();
+            initSmartTracking();
+            initTimeAlarms();
+            updateLocationUI();
+            updatePermissionBanner();
+        });
+
+        // --- PWA / Service Worker ---
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => { swRegistration = reg; })
+                    .catch(err => console.log('SW no registrado:', err));
+            }
+        }
+
+        function updatePermissionBanner() {
+            const banner = document.getElementById('permission-banner');
+            if (!('Notification' in window)) {
+                banner.style.display = 'block';
+                banner.innerText = 'Este navegador no soporta notificaciones.';
+                return;
+            }
+            if (Notification.permission !== 'granted') {
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Debe llamarse desde un toque del usuario (requisito de iOS Safari)
+        function requestPermissions() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(() => updatePermissionBanner());
+            }
+            // "Desbloquea" el audio en iOS, que exige interacción previa
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                ctx.resume();
+            } catch (e) {}
+            // Vibración de confirmación
+            if (navigator.vibrate) navigator.vibrate(100);
+        }
+
+        function saveCurrentLocation(type) {
+            if (!navigator.geolocation) return alert("Tu navegador no soporta geolocalización.");
+
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                customLocations[type] = { lat: latitude, lon: longitude };
+                localStorage.setItem('custom_locations', JSON.stringify(customLocations));
+                updateLocationUI();
+                alert(`¡Ubicación de ${type === 'central' ? 'Cochera' : 'Casa'} configurada con éxito!`);
+            }, err => {
+                alert("Error al obtener tu posición GPS. Asegúrate de dar permisos de ubicación.");
+            }, { enableHighAccuracy: true });
+        }
+
+        function updateLocationUI() {
+            const cocheraStatus = document.getElementById('cochera-status');
+            const casaStatus = document.getElementById('casa-status');
+
+            if (customLocations.central) {
+                cocheraStatus.innerText = `Guardada (${customLocations.central.lat.toFixed(4)}, ${customLocations.central.lon.toFixed(4)})`;
+                cocheraStatus.style.color = 'var(--color-low)';
+            }
+            if (customLocations.casa) {
+                casaStatus.innerText = `Guardada (${customLocations.casa.lat.toFixed(4)}, ${customLocations.casa.lon.toFixed(4)})`;
+                casaStatus.style.color = 'var(--color-low)';
+            }
+        }
+
+        function setTheme(themeName, element) {
+            document.body.className = 'theme-' + themeName;
+            document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function changeScreen(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + screen).classList.add('active');
+        }
+
+        function changeMonth(direction) {
+            currentMonth += direction;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            initCalendar();
+        }
+
+        function initCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            document.getElementById('calendar-month-year').innerText = `${months[currentMonth]} ${currentYear}`;
+
+            const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+            dayNames.forEach(name => {
+                const el = document.createElement('div');
+                el.className = 'calendar-day-name';
+                el.innerText = name;
+                grid.appendChild(el);
+            });
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            for (let x = 0; x < firstDayIndex; x++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-cell empty';
+                grid.appendChild(emptyCell);
+            }
+
+            for (let i = 1; i <= totalDays; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-cell';
+                cell.innerText = i;
+
+                const dateKey = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+
+                if (currentYear === todayDate.getFullYear() && currentMonth === todayDate.getMonth() && i === todayDate.getDate()) {
+                    cell.classList.add('today');
+                }
+
+                const dayEvents = events.filter(e => e.date === dateKey);
+                if (dayEvents.length > 0) {
+                    const barContainer = document.createElement('div');
+                    barContainer.className = 'indicator-bar-container';
+
+                    dayEvents.slice(0, 3).forEach(ev => {
+                        const bar = document.createElement('div');
+                        bar.className = 'ind-bar';
+                        bar.style.backgroundColor = `var(--color-${ev.priority})`;
+                        barContainer.appendChild(bar);
+                    });
+                    cell.appendChild(barContainer);
+                }
+
+                cell.onclick = () => openDate(dateKey);
+                grid.appendChild(cell);
+            }
+        }
+
+        function openDate(dateKey) {
+            selectedDateStr = dateKey;
+            document.getElementById('selected-date-title').innerText = `Gestión: ${dateKey}`;
+            renderDayEvents();
+            changeScreen('events');
+        }
+
+        function saveEvent() {
+            const title = document.getElementById('eventTitle').value;
+            const time = document.getElementById('eventTime').value;
+            const priority = document.getElementById('eventPriority').value;
+            const loc = document.getElementById('eventLoc').value;
+
+            if (!title || !time) return alert("Rellena los datos básicos.");
+
+            events.push({
+                id: 'ev_' + Date.now(),
+                date: selectedDateStr,
+                title, time, priority, loc,
+                notified: false,
+                alarmFired: false
+            });
+
+            localStorage.setItem('cal_events', JSON.stringify(events));
+            renderDayEvents();
+            initCalendar();
+
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventTime').value = '';
+        }
+
+        function renderDayEvents() {
+            const container = document.getElementById('current-day-events');
+            container.innerHTML = '';
+            const dayEvents = events.filter(e => e.date === selectedDateStr);
+
+            dayEvents.forEach(ev => {
+                const div = document.createElement('div');
+                div.className = 'event-item';
+                div.style.borderLeftColor = `var(--color-${ev.priority})`;
+
+                let labelGeo = '';
+                if (ev.loc !== 'none') {
+                    const labelMap = { central: 'Mi Cochera', casa: 'Mi Casa', mercadona: 'Mercadona', super: 'Supermercado' };
+                    labelGeo = `<br><small>📍 Alerta de proximidad: ${labelMap[ev.loc] || ev.loc}</small>`;
+                }
+
+                div.innerHTML = `
+                    <div>
+                        <strong>[${ev.time}] ${ev.title}</strong>
+                        ${labelGeo}
+                    </div>
+                    <button class="btn-mini-del" onclick="deleteEvent('${ev.id}')">X</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteEvent(id) {
+            events = events.filter(e => e.id !== id);
+            localStorage.setItem('cal_events', JSON.stringify(events));
+            renderDayEvents();
+            initCalendar();
+        }
+
+        function playAlertSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+
+                const playBeep = (delay, frequency, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(frequency, ctx.currentTime + delay);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + delay);
+                    osc.stop(ctx.currentTime + delay + duration);
+                };
+
+                playBeep(0, 880, 0.15);
+                playBeep(0.2, 880, 0.25);
+            } catch (e) {
+                console.log("Audio en espera de interacción de usuario.");
+            }
+        }
+
+        // Punto único de disparo: sonido + vibración + notificación
+        function triggerAlarm(title, body, tag) {
+            playAlertSound();
+
+            // Vibración: solo funciona en Android/Chrome, iOS Safari no expone esta API
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200, 100, 400]);
+            }
+
+            if (swRegistration && swRegistration.showNotification) {
+                // Vía Service Worker: más fiable en Android, incluye patrón de vibración propio
+                swRegistration.showNotification(title, {
+                    body,
+                    icon: 'icon-192.png',
+                    badge: 'icon-192.png',
+                    vibrate: [200, 100, 200, 100, 400],
+                    tag,
+                    requireInteraction: true
+                });
+            } else {
+                triggerNotification(body, title);
+            }
+        }
+
+        function initSmartTracking() {
+            if (!navigator.geolocation) return;
+
+            setInterval(() => {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const { latitude, longitude, speed } = pos.coords;
+                    const currentSpeedKmh = speed ? (speed * 3.6) : 40;
+
+                    events.forEach(ev => {
+                        if (ev.loc === 'none' || ev.notified) return;
+
+                        let locationsToCheck = [];
+
+                        if (ev.loc === 'central' && customLocations.central) {
+                            locationsToCheck = [{ name: 'Tu Cochera', lat: customLocations.central.lat, lon: customLocations.central.lon }];
+                        } else if (ev.loc === 'casa' && customLocations.casa) {
+                            locationsToCheck = [{ name: 'Tu Casa', lat: customLocations.casa.lat, lon: customLocations.casa.lon }];
+                        } else {
+                            locationsToCheck = geofenceZones[ev.loc] || [];
+                        }
+
+                        locationsToCheck.forEach(place => {
+                            if (ev.notified) return;
+
+                            const distanceKm = calculateDistance(latitude, longitude, place.lat, place.lon);
+                            const timeToArrivalMinutes = (distanceKm / currentSpeedKmh) * 60;
+
+                            if (timeToArrivalMinutes <= 5 || distanceKm < 0.20) {
+                                triggerAlarm('TaskMaster Proximidad', `Estás llegando a ${place.name}. Tarea: ${ev.title}`, 'geo_' + ev.id);
+                                ev.notified = true;
+                                localStorage.setItem('cal_events', JSON.stringify(events));
+                            }
+                        });
+                    });
+                });
+            }, 25000);
+        }
+
+        // Alarmas por hora exacta: compara la hora actual con la hora guardada de cada evento
+        function initTimeAlarms() {
+            checkTimeAlarms();
+            setInterval(checkTimeAlarms, 20000);
+        }
+
+        function checkTimeAlarms() {
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const currentHHMM = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            let changed = false;
+            events.forEach(ev => {
+                if (ev.alarmFired) return;
+                if (ev.date === todayStr && ev.time === currentHHMM) {
+                    triggerAlarm('TaskMaster', ev.title, 'time_' + ev.id);
+                    ev.alarmFired = true;
+                    changed = true;
+                }
+            });
+            if (changed) localStorage.setItem('cal_events', JSON.stringify(events));
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function triggerNotification(text, title) {
+            if (Notification.permission === 'granted') {
+                new Notification(title || "TaskMaster Proximidad", { body: text, icon: 'icon-192.png' });
+            }
+        }
+    </script>
+</body>
+</html>
